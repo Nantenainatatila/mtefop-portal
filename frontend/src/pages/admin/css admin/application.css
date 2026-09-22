@@ -1,0 +1,54 @@
+.application-container {
+    width: 100%;
+    margin: 0px auto;
+    padding: 10px;
+    overflow: auto;
+}
+
+.header-application {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid black;
+    padding: 15px ;
+    width: 100%;
+}
+
+.header-application h2 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.btn-ajouter {
+    padding: 10px 50px;
+    border-radius: 10px;
+    background: #0f3d75;
+    color: white;
+    font-size: 15px;
+    cursor: pointer;
+    text-decoration: none;
+}
+.btn-ajouter:hover {
+    background: #1d5da8;
+}
+
+.application-table {
+    
+    border-collapse: collapse;
+    display: flex;
+}
+
+.application-table th, .application-table td {
+    padding: 15px;
+    border-bottom: 1px solid;
+}
+.application-table th {
+    background: #cac5c5;
+}
+@media (max-width: 768px) {
+    .header-application {
+        margin-bottom: 20px;
+    }
+}
+
+
