@@ -31,7 +31,7 @@ const register = async (req , res) => {
             10
         );
         
-        await pool.query(
+        await pool.query(  
             `INSERT INTO administrations(
                     nom_admin, email_admin, password_admin
                 )

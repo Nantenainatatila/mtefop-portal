@@ -93,55 +93,65 @@ function GestionAdministration() {
                         </tr>
                     </thead>
                     <tbody>
-                        {admins.map((admin) => (
-                            <tr key={admin.id_admin}>
-                                <td>{admin.nom_admin}</td>
-                                <td>{admin.email_admin}</td>
-                                <td className={admin.statut_admin === "rejected"? 
-                                "rejeter" : 
-                                admin.statut_admin === "active"? "accepter" : "enattente"}>
-                                    {admin.statut_admin === "pending"
-                                    ?"En attente"
-                                    : admin.statut_admin === "rejected"
-                                        ?"Refusé"
-                                        :"Accepté"
-                                    }
-                                </td>
-                                <td>{formatDate(admin.date_creation)}</td>
-                                <td className={admin.statut_admin === "pending"? "non-vu" : "pending"}>
-                                    <div >
-                                        <div className="actions-buttons">
-                                                <button 
-                                                    type="button" 
-                                                    onClick={() => 
-                                                        accepter(admin.id_admin)
-                                                    }
-                                                    className="action-button-accepter"
-                                                    disabled={admin.statut_admin !== "pending"}
-                                                >
-                                                    <Check />
-                                                    <span>Accepter</span>
-                                                </button>
-                                                <button 
-                                                    className="action-button-refuser" 
-                                                    type="button" onClick={()=>
-                                                    refuser(admin.id_admin)}
-                                                    disabled={admin.statut_admin !== "pending"}
-                                                >
-                                                        <X  />
-                                                        <span>Refuser</span>
-                                                </button>
+                        {admins.length > 0 ? (
+                            admins.map((admin) => (
+                                <tr key={admin.id_admin}>
+                                    <td>{admin.nom_admin}</td>
+                                    <td>{admin.email_admin}</td>
+                                    <td className={admin.statut_admin === "rejected"? 
+                                    "rejeter" : 
+                                    admin.statut_admin === "active"? "accepter" : "enattente"}>
+                                        {admin.statut_admin === "pending"
+                                        ?"En attente"
+                                        : admin.statut_admin === "rejected"
+                                            ?"Refusé"
+                                            :"Accepté"
+                                        }
+                                    </td>
+                                    <td>{formatDate(admin.date_creation)}</td>
+                                    <td className={admin.statut_admin === "pending"? "non-vu" : "pending"}>
+                                        <div >
+                                            <div className="actions-buttons">
+                                                    <button 
+                                                        type="button" 
+                                                        onClick={() => 
+                                                            accepter(admin.id_admin)
+                                                        }
+                                                        className="action-button-accepter"
+                                                        disabled={admin.statut_admin !== "pending"}
+                                                    >
+                                                        <Check />
+                                                        <span>Accepter</span>
+                                                    </button>
+                                                    <button 
+                                                        className="action-button-refuser" 
+                                                        type="button" onClick={()=>
+                                                        refuser(admin.id_admin)}
+                                                        disabled={admin.statut_admin !== "pending"}
+                                                    >
+                                                            <X  />
+                                                            <span>Refuser</span>
+                                                    </button>
 
-                                            <button className="action-button-supprimer" type="button" onClick={() => 
-                                                deleteAdmin(admin.id_admin)}
-                                            >
-                                                <Trash2 />Supprimer
-                                            </button>
+                                                <button className="action-button-supprimer" type="button" onClick={() => 
+                                                    deleteAdmin(admin.id_admin)}
+                                                >
+                                                    <Trash2 />Supprimer
+                                                </button>
+                                            </div>
                                         </div>
-                                    </div>
+                                    </td>
+                                </tr>
+                            ))
+                        ):(
+                            <tr>
+                                <td colSpan={5}>
+                                    <center>Aucune administration pour le moment</center>
                                 </td>
+                                
                             </tr>
-                        ))}
+                        )}
+                        
                     </tbody>
                 </table>
             </div>

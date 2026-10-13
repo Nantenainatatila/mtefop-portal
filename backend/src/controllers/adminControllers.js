@@ -119,6 +119,9 @@ const getCategorie = async (req , res) => {
         return res.json(response.rows);
     } catch (error) {
         console.error("erreur de recuperation de categories", error);
+        res.status(500).json({
+            message: "Une erreur est survenue dans le serveur"
+        });
     }
 };
 

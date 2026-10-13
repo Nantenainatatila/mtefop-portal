@@ -1,5 +1,4 @@
 
-//sudo -u postgres psql -d mtefop_portal_db
 -- ===================TABLE ADMINISTRATION===========--
 CREATE TABLE administrations (
     id_admin SERIAL PRIMARY KEY,
@@ -17,6 +16,24 @@ CREATE TABLE administrations (
     CONSTRAINT chk_admin_statut
         CHECK (statut_admin IN ('pending', 'active', 'rejected', 'disabled'))
 );
+
+INSERT INTO administrations (
+    nom_admin,
+    email_admin,
+    password_admin,
+    role_admin,
+    statut_admin,
+    actif
+    )
+    VALUES (
+        'Nantenaina', 
+        'devnantenaina@gmail.com', 
+        '$2b$10$MDwiZf2M9.8A89Ac1e0Szuq1NEhVvSh9UcuTu.X/ZimOYmeXkRAjC', 
+        'super_admin',
+        'active',
+        TRUE
+    );
+
 
 --==================TABLE CATEGORIER======================-----------
 CREATE TABLE categories (
@@ -47,9 +64,9 @@ CREATE TABLE applications (
 
     visible_app BOOLEAN NOT NULL DEFAULT FALSE,
     statut_app VARCHAR(20) NOT NULL DEFAULT 'offline',
-    source_app VARCHAR(500);
-    technologie_app VARCHAR(30);
-    version_app VARCHAR(50);
+    source_app VARCHAR(500),
+    technologie_app VARCHAR(30),
+    version_app VARCHAR(50),
 
     container_name_app VARCHAR(100),
     port_app INTEGER,
@@ -77,6 +94,58 @@ CREATE TABLE applications (
         CHECK (
             port_app IS NULL 
             OR port_app BETWEEN 1 AND 65535
+        )
+);
+
+--====================TABLE APPLICATION_DATABASE====================-----
+
+CREATE TABLE application_database (
+    id_db SERIAL PRIMARY KEY,
+
+    id_app INTEGER NOT NULL UNIQUE,
+
+    moteur_db VARCHAR(30) NOT NULL,
+
+    host_db VARCHAR(255),
+
+    port_db INTEGER,
+
+    nom_db VARCHAR(100),
+
+    utilisateur_db VARCHAR(100),
+
+    mot_de_passe_db VARCHAR(255),
+
+    container_name_db VARCHAR(100),
+
+    volume_name_db VARCHAR(100),
+
+    actif BOOLEAN NOT NULL DEFAULT TRUE,
+
+    date_creation TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    date_modification TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_application_database_app
+        FOREIGN KEY (id_app)
+        REFERENCES applications(id_app)
+        ON UPDATE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_application_database_moteur
+        CHECK (
+            moteur_db IN (
+                'aucune',
+                'postgresql',
+                'mysql',
+                'mariadb',
+                'mongodb'
+            )
+        ),
+
+    CONSTRAINT chk_application_database_port
+        CHECK (
+            port_db BETWEEN 1 AND 65535
         )
 );
 

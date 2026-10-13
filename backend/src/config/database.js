@@ -9,7 +9,7 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD
 });
 pool.on("connect", () => {
-    console.log(" ");
+    console.log("");
 });
 pool.on("error", (error) => {
     console.error("erreur de connexion e postgres:", error);

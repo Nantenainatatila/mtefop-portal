@@ -1,10 +1,14 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const docker = require("./config/docker");
+
 const authRoute = require("./routes/authRoute");
 const registerRoute = require("./routes/registerRoutse");
 const adminRoute = require("./routes/adminRoute") ;
 const applicationRoute = require("./routes/applicationRoute");
+const deploiementRoute = require("./routes/deploiementRoute");
 
 const app = express();
 
@@ -19,9 +23,31 @@ app.use("/api/auth", authRoute);
 app.use("/api/register", registerRoute);
 app.use("/api/administrations", adminRoute);
 app.use("/api/applications", applicationRoute);
+app.use("/api/deploiements", deploiementRoute);
+
+
+//tester la connexion docker
+docker.ping()
+    .then(() => {
+        console.log("Connexion à Docker reussit");
+    })
+    .catch((error) => {
+        console.error("Erreur de connexion à docker:", error.message);
+    });
+//rendre le dossier uploads accessible depuis le navigateur
+
+app.use(
+    "/uploads",
+    express.static(
+        path.join(__dirname, "../uploads")
+    )
+);
 
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+app.listen(
+    PORT,
+    "0.0.0.0",
+    () => {
     console.log(`SERVEUR DEMARÉ SUR LE PORT ${PORT}`);
 });

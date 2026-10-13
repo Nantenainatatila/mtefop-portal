@@ -6,6 +6,8 @@ import { FileArchive } from "lucide-react";
 
 
 function AjouterApplication () {
+    const navigate = useNavigate();
+
     const {id} = useParams();
     
     const ModeModification = Boolean(id);
@@ -22,7 +24,8 @@ function AjouterApplication () {
         nom_bouton_app: "",
         description_app: "",
         type_app: "",
-        url_app: ""
+        url_app: "",
+        moteur_db: ""
     });
     
     const [erreur, setErreur] = useState("");
@@ -37,6 +40,7 @@ function AjouterApplication () {
             
         } catch (error) {
             console.log("erreur de recuperation de cathegories dans react", error);
+            setErreur("Une erreur est survenue dans le serveur");
         }
     };
 
@@ -48,14 +52,16 @@ function AjouterApplication () {
                 nom_bouton_app: "",
                 description_app: "",
                 type_app: "",
-                url_app: ""
+                url_app: "",
+                moteur_db: ""
             });
             setCategories([]);
             setIconeApp(null);
             setFichierApp(null);
             chargerCat();
-        }
-        api.get(`applications/${id}`)
+        } else {
+            
+            api.get(`applications/${id}`)
             .then(response => {
                 const donnee = response.data;
                 setFormData({
@@ -64,12 +70,15 @@ function AjouterApplication () {
                     nom_bouton_app: donnee.donnee.nom_bouton_app,
                     description_app: donnee.donnee.description_app,
                     type_app: donnee.donnee.type_app,
-                    url_app: donnee.donnee.url_app
+                    url_app: donnee.donnee.url_app,
+                    moteur_db: donnee.donnee.moteur_db
                 });
             })
             .catch (error => {
                 console.error("erreur de recuperation app par id", error);
             });
+        }
+        
             
     },[id]);
 
@@ -137,12 +146,9 @@ function AjouterApplication () {
         setMessage("");
         setLoading(true);
 
-        try {
-            if (ModeModification) {
-                await api.put(`applications/${id}`);
-            } else {
+            try {
                 if (!formData.nom_app.trim()) {
-                    setErreur("Veuiller remplir le champ nom d'application");
+               setErreur("Veuiller remplir le champ nom d'application");
                     setLoading(false);
                     return;
                 }
@@ -193,20 +199,27 @@ function AjouterApplication () {
                 data.append("description_app", formData.description_app);
                 data.append("type_app", formData.type_app);
                 data.append("url_app", formData.url_app);
+                data.append("moteur_db", formData.moteur_db);
+
                 if (fichierApp) {
                     data.append("fichier_app", fichierApp);
                 }
                 if (iconeApp) {
                     data.append("icone_app", iconeApp);
-                }
-
+                }    
                 
+                // CHOIX
 
+                if (ModeModification) {
+                    const response1 = await api.put(`applications/${id}`, data);
+                    setMessage(response1.data.message);
+                    navigate("/admin/application");
+
+                } else {
                 //================API=========================
-
-
-                const response = await api.post("/applications", data);
-                
+                    const response2 = await api.post("/applications", data);
+                    setMessage(response2.data.message);
+                }
                 setErreur("");
                 setFormData({
                     id_cat: "",
@@ -214,18 +227,16 @@ function AjouterApplication () {
                     nom_bouton_app: "",
                     description_app: "",
                     type_app: "",
-                    url_app: ""
+                    url_app: "",
+                    moteur_db: ""
                 });
                 setIconeApp(null);
                 setFichierApp(null);
-
-                setMessage(response.data.message);
                 
-                }
             
         } catch (error) {
             console.error("Erreur d'enregistrement d'application frontend", error);
-            setErreur(error.response?.data?.message || "erreur total dans le serveur");
+            setErreur(error.response?.data?.message || "Erreur total dans le serveur");
         } finally {
             setLoading(false);
         }
@@ -340,46 +351,69 @@ function AjouterApplication () {
                                 </div>
 
                                 {formData.type_app === "url" && (
-                                    <div className="input-group-ajout">
-                                        <div className="label">
-                                            <label htmlFor="">URL d'application: </label>
+                                    
+                                        <div className="input-group-ajout">
+                                            <div className="label">
+                                                <label htmlFor="">URL d'application: </label>
+                                            </div>
+                                            
+                                            <input 
+                                                type="url" 
+                                                id="url_app"
+                                                name="url_app"
+                                                placeholder="URL de l'application"
+                                                value={formData.url_app}
+                                                onChange={handleChange}
+                                            />
                                         </div>
-                                        
-                                        <input 
-                                            type="url" 
-                                            id="url_app"
-                                            name="url_app"
-                                            placeholder="URL de l'application"
-                                            value={formData.url_app}
-                                            onChange={handleChange}
-                                        />
-                                    </div>
+                                    
                                 )}
 
                                 {formData.type_app == "docker" && (
-                                    <div className="input-group-ajout1">
-                                        <div className="label">
-                                            <FileArchive size={25}/>
-                                            <label htmlFor="" >Fichier ZIP: </label>
+                                    <div>
+                                        <div className="input-group-ajout">
+                                            <div className="label">
+                                                <label htmlFor="">Base des donnés</label>
+                                            </div>
+                                            <select 
+                                                name="moteur_db" 
+                                                value={formData.moteur_db}
+                                                onChange={handleChange}
+                                            >
+                                                <option value="">--Base des données--</option>
+                                                <option value="aucune">Aucune base</option>
+                                                <option value="postgresql">PostgresSQL</option>
+                                                <option value="mysql">MySQL</option>
+                                                <option value="mariadb">MariaDB</option>
+                                                
+                                            </select>
+                                        </div>
+                                        <div className="input-group-ajout1">
+                                            <div className="label">
+                                                <FileArchive size={25}/>
+                                                <label htmlFor="" >Fichier ZIP: </label>
+                                            </div>
+                                            
+                                            <input 
+                                                type="file" 
+                                                accept=".zip"
+                                                onChange={handleFichierChange}
+                                            />
+                                        
+                                            
+                                        
+                                    
+                                                {fichierApp && (
+                                                        <p>
+                                                            Fichier selectionné:
+                                                            {" "}
+                                                            {fichierApp.name}
+                                                        </p>
+                                                    )}
                                         </div>
                                         
-                                        <input 
-                                            type="file" 
-                                            accept=".zip"
-                                            onChange={handleFichierChange}
-                                        />
-                                    
-                                        
-                                    
-                                
-                                {fichierApp && (
-                                            <p>
-                                                Fichier selectionné:
-                                                {" "}
-                                                {fichierApp.name}
-                                            </p>
-                                        )}
                                     </div>
+                                    
                                 )}
                             </div>
                         </div>

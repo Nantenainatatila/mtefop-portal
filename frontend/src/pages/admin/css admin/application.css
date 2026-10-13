@@ -51,4 +51,11 @@
     }
 }
 
+.application-icon {
+    width: 45px;
+    height: 45px;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
 

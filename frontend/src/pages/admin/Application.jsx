@@ -25,7 +25,7 @@ function Application() {
     //SUPPRESSION APP
 
     const supprimerApp = async(id_app) => {
-  
+        console.log("io gne id tadiavina:" , id_app);
 
         const confirmation = window.confirm("Voulez-vous supprimer cette application ?");
 
@@ -69,14 +69,17 @@ function Application() {
                 <table className="table">
                     <thead>
                         <tr>
+                            <th>Icone</th>
                             <th>Nom </th>
                             <th>Nom du button</th>
                             
                             <th>Cathegorie</th>
                             <th>Type</th>
+                            <th>Base des données</th>
                             <th>Statut</th>
                             
                             <th>Source/URL</th>
+                            
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -85,15 +88,26 @@ function Application() {
                         {applications.length > 0 ? (
                             applications.map((app) => (
                                 <tr>
+                                    <td>{app.icone_app ? (
+                                        <img 
+                                            src={`http://localhost:5000/${app.icone_app}`}
+                                            className="application-icon"
+                                            
+                                        />
+                                        ): (
+                                            "Aucun icone"
+                                        )}</td>
                                     <td>{app.nom_app}</td>
                                     <td>{app.nom_bouton_app}</td>
                                     <td>{app.nom_cat}</td>
                                     <td>{app.type_app}</td>
+                                    <td>{app.moteur_db}</td>
                                     <td>
                                         {app.statut_app === "offline"?
                                         "Pas en ligne" 
                                         : app.statut_app === "online"? "En ligne" : "Erreur"}</td>
                                     <td>{app.type_app === "docker"? app.source_app : app.url_app}</td>
+                                    
                                     <td>
                                         <button>Deployer</button>
                                         <button type="button" onClick={() => modifierApp(app.id_app)}>Modifier</button>
