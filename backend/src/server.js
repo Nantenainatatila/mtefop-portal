@@ -4,13 +4,27 @@ const cors = require("cors");
 const path = require("path");
 const docker = require("./config/docker");
 
+const http = require("http");
+const { Server } = require("socket.io");
+
 const authRoute = require("./routes/authRoute");
 const registerRoute = require("./routes/registerRoutse");
 const adminRoute = require("./routes/adminRoute") ;
 const applicationRoute = require("./routes/applicationRoute");
 const deploiementRoute = require("./routes/deploiementRoute");
 
+
+
 const app = express();
+const server = http.createServer(app);
+
+const io = new Server(server, {
+    cors: {
+        origin: "http://localhost:5173",
+        methods: ["GET", "POST"]
+    }
+});
+app.set("io", io);
 
 app.use(cors());
 app.use(express.json());
@@ -45,7 +59,7 @@ app.use(
 
 
 const PORT = process.env.PORT || 5000;
-app.listen(
+server.listen(
     PORT,
     "0.0.0.0",
     () => {

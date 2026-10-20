@@ -20,7 +20,6 @@ const obtenirAppPourDeploiement = async (id_app) => {
             a.source_app,
             a.visible_app,
             a.statut_app,
-            a.container_name_app,
             a.port_app,
             a.date_creation,
             a.date_modification,
@@ -317,7 +316,7 @@ const trouveRacineProjet = async (workspace) => {
 
     // FRONTEND OBLIGATOIRE
     if (!contientFrontend) {
-        throw new Error("Structure du projet invalide, le dossier frontend est obligatoire.");
+        throw new Error("Structure du projet invalide, le dossier appélé 'frontend' est obligatoirement placé à la racine du fichier zip.");
     }
     console.log("frontend:", contientFrontend);
 
@@ -335,7 +334,7 @@ const detecterTechnologieFrontend = async (frontendPath) => {
     try {
         await fs.access(frontendPath);
     } catch (error) {
-        throw new Error("Le dossier frontend est introuvable. Le dossier frontend doit etre à la racine du projet");
+        throw new Error("Le dossier frontend est introuvable. Le dossier frontend doit etre à la racine du zip");
     }
 
     const contenu = await lireContenuDossier(frontendPath);
@@ -455,7 +454,7 @@ const detecterTechnologieBackend = async (backendPath) => {
             );
             packageJson = JSON.parse(packageContent);
         } catch (error) {
-            throw new Error(`IMPOSSIBLE de lire le package.json du backend: ${error.message}`);
+            throw new Error(`Impossible de lire le package.json du backend: ${error.message}`);
         }
 
         const dependencies = {

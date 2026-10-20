@@ -29,7 +29,7 @@ router.post(
 //get app
 router.get("/", getApplication);
 // deleteApp
-router.delete("/:id",authMiddleware, deleteApp);
+router.delete("/:id", deleteApp);
 // get APP id
 router.get("/:id", getAppId);
 //modification d'app

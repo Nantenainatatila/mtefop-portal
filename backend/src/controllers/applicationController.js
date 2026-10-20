@@ -2,6 +2,7 @@ const { error } = require("console");
 const pool = require("../config/database");
 const fs = require("fs").promises;
 const path = require("path");
+const docker = require("../config/docker");
 
 //get app 
 const getApplication = async (req , res) => {
@@ -150,7 +151,7 @@ const ajouterApplication = async (req , res) => {
 const deleteApp = async(req, res) => {
     try {
         const {id} = req.params;
-
+        console.log("id:", id);
         const application = await pool.query(
             `SELECT 
                 id_app,
@@ -181,6 +182,40 @@ const deleteApp = async(req, res) => {
         });
 
         console.log("Workspace supprimé");
+
+        const supprimerSiExiste = async (libelle, supprime) => {
+            try {
+                await supprime();
+                console.log(`${libelle} supprimé`);
+            } catch (error) {
+                if (error.statusCode !== 404) {
+                    throw error;
+                }
+                console.log(`${libelle} n'existe plus (déjà abscent)`);
+            }
+        };
+        console.log("Suppression de container/image et volume");
+        const nom = `mtefop-app-${id}`;
+        // containers
+        for (const suffixe of ["frontend", "backend", "postgres", "mysql", "mariadb"]) {
+            await supprimerSiExiste(`Container ${nom}-${suffixe}`, () =>
+                 docker.getContainer(`${nom}-${suffixe}`).remove({ force: true})
+            );
+        }
+
+        // Images
+        for (const suffixe of ["frontend", "backend"]) {
+            await supprimerSiExiste(`Image ${nom}-${suffixe}:latest`, () =>
+                docker.getImage(`${nom}-${suffixe}:latest`).remove({ force: true})
+            );
+        }
+    
+        // Volume
+        for (const suffixe of ["postgres", "mysql", "mariadb"]) {
+            await supprimerSiExiste(`Volume ${nom}-${suffixe}-data`, () => 
+                docker.getVolume(`${nom}-${suffixe}-data`).remove({ force: true})
+            );
+        }
 
         if (app.source_app) {
             try {
@@ -235,18 +270,30 @@ const getAppId = async (req, res) => {
                 SELECT 
                 d.id_db,
                 d.moteur_db,
+                d.container_name_db,
+                d.volume_name_db,
+                d.reseau_db,
+                d.actif,
                 a.id_app,
                 a.id_cat,
                 a.nom_app,
                 a.nom_bouton_app,
                 a.type_app,
+                a.visible_app,
                 a.statut_app,
                 a.url_app,
                 a.source_app,
                 a.description_app,
                 a.icone_app,
+                a.frontend_technologie_app,
+                a.backend_technologie_app,
+                a.version_app,
+                a.url_publique_app,
+                a.port_app,
+                a.date_dernier_deploiement,
                 c.id_cat,
                 c.nom_cat
+                
 
             FROM application_database d
             INNER JOIN applications a

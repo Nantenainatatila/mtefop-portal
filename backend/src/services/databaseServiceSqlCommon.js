@@ -959,9 +959,10 @@ const creerBaseSQL = async (
                 mot_de_passe_db = $5,
                 container_name_db = $6,
                 volume_name_db = $7,
+                reseau_db = $8,
                 actif = TRUE,
                 date_modification = CURRENT_TIMESTAMP
-            WHERE id_app = $8
+            WHERE id_app = $9
             RETURNING id_app
         `,
         [
@@ -972,6 +973,7 @@ const creerBaseSQL = async (
             motDePasse,
             nomContainer,
             nomVolume,
+            nomNetwork,
             idApp
         ]
     );

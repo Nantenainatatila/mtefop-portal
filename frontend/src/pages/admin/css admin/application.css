@@ -32,6 +32,11 @@
     background: #1d5da8;
 }
 
+.ligne_tableau:hover {
+    background-color: white;
+    cursor: pointer;
+}
+
 .application-table {
     
     border-collapse: collapse;

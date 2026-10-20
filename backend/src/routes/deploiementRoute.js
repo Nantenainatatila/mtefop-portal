@@ -4,8 +4,9 @@ const router = express.Router();
 
 
 
-const  { recupererApp }  = require("../controllers/deploiementControljer");
+const  { recupererApp, recupererDeploiement }  = require("../controllers/deploiementControljer");
 
-router.get("/:id", recupererApp);
+router.get("/:id/:idAdmin", recupererApp);
+router.get("/:id", recupererDeploiement);
 
 module.exports = router;

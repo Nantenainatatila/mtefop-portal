@@ -1,5 +1,6 @@
 const fs = require("fs/promises");
 const path = require("path");
+const crypto = require("crypto");
 const docker = require("../config/docker");
 
 // ============================================================
@@ -24,6 +25,9 @@ const PORTS_DB = {
 
 // Préfixe des routes API : le frontend appelle /api/... et nginx redirige vers le backend
 const PREFIXE_API = "/api/";
+
+// Chemins que nginx relaie vers le backend ( /uploads = images et avatars envoyés )
+const PREFIXES_PROXY = [PREFIXE_API, "/uploads/"];
 
 // ============================================================
 // TEMPLATES DOCKERFILE
@@ -57,6 +61,12 @@ RUN if [ -d "dist" ]; then \\
         exit 1; \\
     fi
 
+# Le navigateur appelle le backend via nginx (même origine) : on retire
+# l'origine http://localhost:PORT écrite en dur dans le code ou le .env
+# (http://localhost:5000/api devient /api).
+RUN find /output -type f \\( -name "*.js" -o -name "*.html" -o -name "*.css" \\) \\
+        -exec sed -i -E 's#https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?##g' {} +
+
 
 FROM nginx:alpine
 
@@ -75,6 +85,10 @@ FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 COPY . /usr/share/nginx/html
+
+# Même nettoyage pour un site HTML/JS statique
+RUN find /usr/share/nginx/html -type f \\( -name "*.js" -o -name "*.html" \\) \\
+        -exec sed -i -E 's#https?://(localhost|127\\.0\\.0\\.1)(:[0-9]+)?##g' {} +
 
 EXPOSE 80
 
@@ -146,8 +160,9 @@ CMD ["apache2-foreground"]
  */
 const genererNginxConfig = (backend) => {
     const proxy = backend
-        ? `
-    location ${PREFIXE_API} {
+        ? PREFIXES_PROXY.map(
+              (prefixe) => `
+    location ${prefixe} {
         resolver 127.0.0.11 valid=10s;
         set $backend_upstream http://${backend.hote}:${backend.port};
         proxy_pass $backend_upstream;
@@ -155,8 +170,13 @@ const genererNginxConfig = (backend) => {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        # Pour le navigateur, page et API ont la même origine (nginx) : le CORS
+        # ne s'applique pas. On retire l'en-tête Origin pour que les backends
+        # qui limitent les origines (liste blanche) ne rejettent pas les POST.
+        proxy_set_header Origin "";
     }
 `
+          ).join("")
         : "";
 
     return `
@@ -327,10 +347,12 @@ const construireImage = async (dossier, nomImage) => {
     console.log("dossier:", dossier);
     console.log("Nom image:", nomImage);
 
+    const dernieresLignes = [];
+
     try {
         const stream = await docker.buildImage(
             { context: dossier, src: ["."] },
-            { t: nomImage, nocache: true }
+            { t: nomImage, nocache: false }
         );
 
         await new Promise((resolve, reject) => {
@@ -346,7 +368,11 @@ const construireImage = async (dossier, nomImage) => {
                     resolve(output);
                 },
                 (event) => {
-                    if (event.stream) process.stdout.write(event.stream);
+                    if (event.stream) {
+                        process.stdout.write(event.stream);
+                        dernieresLignes.push(...event.stream.split("\n").filter((l) => l.trim()));
+                        if (dernieresLignes.length > 40) dernieresLignes.splice(0, dernieresLignes.length - 40);
+                    }
                     if (event.error) console.error("DOCKER ERROR:", event.error);
                 }
             );
@@ -357,7 +383,8 @@ const construireImage = async (dossier, nomImage) => {
     } catch (err) {
         console.error(`Erreur build ${nomImage}`, err);
         throw new Error(
-            `Erreur pendant la construction de l'image ${nomImage} : ${err.message}`
+            `Erreur pendant la construction de l'image ${nomImage} : ${err.message}\n` +
+                `--- dernières lignes du build ---\n${dernieresLignes.slice(-25).join("\n")}`
         );
     }
 };
@@ -505,7 +532,14 @@ const verifierDemarrage = async (nom, delaiMs = 4000) => {
  * }
  */
 const construireEnvBackend = (baseDeDonnees, portBackend) => {
-    const env = [`PORT=${portBackend}`, "NODE_ENV=production"];
+    // JWT_SECRET : secret de signature des jetons de connexion. Beaucoup d'applications
+    // le lisent depuis un fichier .env qui n'est pas dans le zip (ignoré par git).
+    // Le portail en fournit un, propre à chaque déploiement.
+    const env = [
+        `PORT=${portBackend}`,
+        "NODE_ENV=production",
+        `JWT_SECRET=${crypto.randomBytes(32).toString("hex")}`
+    ];
     if (!baseDeDonnees) return env;
 
     const moteur = baseDeDonnees.moteur.toLowerCase();
@@ -620,6 +654,111 @@ const verifierBaseDeDonnees = async (baseDeDonnees) => {
     );
 };
 
+// ============================================================
+// TEST DE CONNECTIVITÉ BACKEND -> BASE (exécuté DANS le backend)
+// ============================================================
+
+// Exécute une commande dans un conteneur et retourne { code, sortie }
+const executerAvecSortie = async (conteneur, cmd) => {
+    const exec = await conteneur.exec({ Cmd: cmd, AttachStdout: true, AttachStderr: true });
+    const stream = await exec.start({});
+
+    let sortie = "";
+    const ecrivain = { write: (donnees) => { sortie += donnees.toString("utf8"); } };
+    docker.modem.demuxStream(stream, ecrivain, ecrivain);
+
+    await new Promise((resolve) => {
+        stream.on("end", resolve);
+        stream.on("close", resolve);
+    });
+
+    const resultat = await exec.inspect();
+    return { code: resultat.ExitCode, sortie: sortie.trim() };
+};
+
+// Une commande par techno : ouvre une connexion TCP vers DB_HOST:DB_PORT
+// (variables déjà présentes dans l'environnement du conteneur)
+const COMMANDES_TEST_TCP = {
+    "Node.js": [
+        "node",
+        "-e",
+        "const s=require('net').connect({host:process.env.DB_HOST,port:+process.env.DB_PORT});" +
+            "s.setTimeout(3000);" +
+            "s.on('connect',()=>{s.end();process.exit(0)});" +
+            "s.on('timeout',()=>{console.log('TIMEOUT');process.exit(1)});" +
+            "s.on('error',e=>{console.log(e.code||e.message);process.exit(1)});"
+    ],
+    "Python": [
+        "python",
+        "-c",
+        [
+            "import os, socket, sys",
+            "try:",
+            "    socket.create_connection((os.environ['DB_HOST'], int(os.environ['DB_PORT'])), 3).close()",
+            "except Exception as e:",
+            "    print(e)",
+            "    sys.exit(1)"
+        ].join("\n")
+    ],
+    "PHP": [
+        "php",
+        "-r",
+        "$f=@fsockopen(getenv('DB_HOST'),(int)getenv('DB_PORT'),$n,$m,3);" +
+            "if(!$f){echo $m ?: 'TIMEOUT'; exit(1);} fclose($f);"
+    ]
+};
+COMMANDES_TEST_TCP["Express"] = COMMANDES_TEST_TCP["Node.js"];
+
+const expliquerEchecConnexion = (sortie) => {
+    if (/ENOTFOUND|EAI_AGAIN|Name or service not known|not known/i.test(sortie)) {
+        return "nom introuvable : le backend n'est pas sur le même réseau que la base";
+    }
+    if (/ECONNREFUSED|refused/i.test(sortie)) {
+        return "connexion refusée : la base est joignable mais n'écoute pas sur ce port";
+    }
+    if (/TIMEOUT|timed out/i.test(sortie)) {
+        return "délai dépassé : paquets bloqués entre le backend et la base";
+    }
+    return "cause inconnue";
+};
+
+/**
+ * Prouve que le conteneur backend peut ouvrir une connexion TCP vers la base.
+ * Teste le réseau, le DNS et le port (pas l'authentification).
+ */
+const verifierConnexionBackendBase = async (nomBackend, technologie, baseDeDonnees) => {
+    const commande = COMMANDES_TEST_TCP[technologie];
+    if (!commande) {
+        console.log(`Test de connexion à la base ignoré (techno ${technologie} non gérée)`);
+        return;
+    }
+
+    const conteneur = docker.getContainer(nomBackend);
+    const port = PORTS_DB[baseDeDonnees.moteur.toLowerCase()];
+    let derniere = { code: -1, sortie: "" };
+
+    for (let essai = 1; essai <= 5; essai++) {
+        try {
+            derniere = await executerAvecSortie(conteneur, commande);
+        } catch (err) {
+            derniere = { code: -1, sortie: err.message };
+        }
+
+        if (derniere.code === 0) {
+            console.log(
+                `Connexion backend -> base OK (${baseDeDonnees.conteneur}:${port})`
+            );
+            return;
+        }
+        await pause(1000);
+    }
+
+    throw new Error(
+        `Le backend ne peut pas joindre la base ${baseDeDonnees.conteneur}:${port} ` +
+            `(${expliquerEchecConnexion(derniere.sortie)}). Détail : ${derniere.sortie || "aucun"}`
+    );
+};
+
 /**
  * Pipeline complet : Dockerfiles -> images -> réseau -> DB -> backend -> frontend.
  * Retourne l'URL à ouvrir dans le navigateur.
@@ -632,6 +771,14 @@ const deployerApplication = async ({
     hotePublic = process.env.PUBLIC_HOST || "localhost"
 }) => {
     const noms = nomsApplication(idApp);
+
+    console.log("==========================");
+    console.log(
+        `DEPLOIEMENT APP ${idApp} | base de données : ` +
+            (baseDeDonnees
+                ? `${baseDeDonnees.conteneur} (${baseDeDonnees.moteur})`
+                : "AUCUNE fournie (pas de connexion à la base)")
+    );
 
     // 1. Dockerfiles + images
     await genererDockerfiles(projectRoot, detection, { idApp });
@@ -665,6 +812,17 @@ const deployerApplication = async ({
             role: "backend"
         });
         await verifierDemarrage(noms.conteneurBackend);
+
+        // Preuve que le backend atteint réellement la base
+        if (baseDeDonnees) {
+            await verifierConnexionBackendBase(
+                noms.conteneurBackend,
+                detection.backend.technologie,
+                baseDeDonnees
+            );
+        } else {
+            console.log("Test de connexion à la base ignoré : aucune base fournie");
+        }
     }
 
     // 5. Frontend (publié sur un port libre de l'hôte)

@@ -9,7 +9,6 @@ function AjouterApplication () {
     const navigate = useNavigate();
 
     const {id} = useParams();
-    
     const ModeModification = Boolean(id);
 
 
@@ -159,11 +158,6 @@ function AjouterApplication () {
                     return;
                 }
 
-                if (!formData.description_app.trim()) {
-                    setErreur("Veuiller remplir le champ description");
-                    setLoading(false);
-                    return;
-                }
 
                 if (!formData.id_cat) {
                     setErreur("Veuiller selectionner la cathegorie");
@@ -213,7 +207,7 @@ function AjouterApplication () {
                 if (ModeModification) {
                     const response1 = await api.put(`applications/${id}`, data);
                     setMessage(response1.data.message);
-                    navigate("/admin/application");
+                    navigate(`/admin/application/${id}`);
 
                 } else {
                 //================API=========================
@@ -433,13 +427,17 @@ function AjouterApplication () {
                                     <span>{ModeModification? "Enregistrer la modification": "Enregistrer"}</span>
                                 </button>
                             )}
-                            <Link className="button-retour" to="/admin/application">Retour</Link>
+                            <Link 
+                                className="button-retour" 
+                                to={ModeModification?`/admin/application/${id}`: "/admin/application"}
+                            >
+                                    Retour
+                            </Link>
                         </div>
                         
                     </div>
                     </div>
-                    
-                    
+                       
                 </form>
             
         </div>

@@ -15,6 +15,7 @@ import Partenariat from "./pages/public/Partenariat";
 import DemmandeCompte from "./pages/admin/DemandeCompte";
 import GestionAdministration from "./pages/admin/GestionAdministration";
 import AjouterApplication from "./pages/admin/AjouterApplication";
+import DetailApplication from "./pages/admin/DetailApplication";
 
 import ProtectRoutes from "../protectionRoute/ProtectRoute";
 import SuperAdminRoute from "../protectionRoute/SuperAdminRoute";
@@ -42,6 +43,7 @@ function App () {
               <Route path="deploiement" element={<Deploiement />}/>
               <Route path="ajouterApplication" element={<AjouterApplication />} />
               <Route path="ajouterApplication/:id" element={<AjouterApplication />} />
+              <Route path="application/:id" element={<DetailApplication />}/>
 
               <Route element={<SuperAdminRoute/>}>
                 <Route path="gestionAdministration" element={<GestionAdministration />} />
