@@ -32,7 +32,6 @@ body {
 
     border-radius: 8px;
 
-    background-color: #943232;
 
     color: white;
 
@@ -108,8 +107,7 @@ body {
 /*=======================contenu principale===============*/
 .main-content {
     flex: 1;
-    background-color: #e7dddd;
-    
+    background-color: #791a1a;
 }
 /*=====================FOOTER================================*/
 .footer {
@@ -216,8 +214,8 @@ body {
     opacity: 0;
 
     transition:
-        max-height 0.8s ease,
-        opacity 0.5s ease,
+        max-height 0.7s ease,
+        opacity 0.01s ease,
         padding 0.8s ease;
 }
 
@@ -261,3 +259,110 @@ body {
     }
 }
 
+
+/*===================================================
+=======DESIGN MODERNE (surcharge)===================
+====================================================*/
+:root {
+    --bleu: #0f3d75;
+    --bleu-clair: #1d5da8;
+    --fond: #f3f6fb;
+    --carte: #ffffff;
+    --texte: #1e2a3b;
+    --gris: #6b7a90;
+    --bordure: #e3e8f0;
+    --rouge: #d64545;
+    --vert: #2e9e5b;
+}
+body {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    color: var(--texte);
+    background: var(--fond);
+}
+.layout { background: var(--fond); }
+.header {
+    min-height: 70px;
+    background: linear-gradient(90deg, #0b2f5c, var(--bleu) 60%, var(--bleu-clair));
+    box-shadow: 0 2px 12px rgba(15, 61, 117, 0.25);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+.navbar-logo h2 { margin: 0; letter-spacing: 2px; }
+.nav_link { gap: 4px; align-items: center; }
+.navbar-menu a {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.85);
+}
+.navbar-menu a:hover { background: rgba(255, 255, 255, 0.12); color: #fff; }
+.navbar-menu a.active { background: rgba(255, 255, 255, 0.18); color: #fff; font-weight: 600; }
+
+/* Badge du nombre d'applications en erreur */
+.badge-erreur {
+    min-width: 22px;
+    height: 22px;
+    padding: 0 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    background: var(--rouge);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9);
+    animation: pulse-erreur 2s infinite;
+}
+@keyframes pulse-erreur {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.12); }
+}
+.logout { background: transparent; margin-top: 0; }
+.logout:hover { background: #b83434; transform: translateY(-1px); }
+
+.main-content { background: var(--fond); padding: 10px; }
+.main-content h3 { font-size: 22px; color: var(--bleu); margin: 0 0 20px; }
+
+/* Tableaux (Succès, Erreur, ...) */
+.main-content table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--carte);
+    overflow: hidden;
+    box-shadow: 0 4px 18px rgba(15, 61, 117, 0.08);
+}
+.main-content thead th {
+    background: #b8babd;
+    color: black;
+    text-align: left;
+    padding: 14px 16px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.main-content tbody td {
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--bordure);
+    font-size: 14px;
+}
+.main-content tbody tr:nth-child(even) { background: #f8fafd; }
+.main-content tbody tr:hover { background: #eef4fc; }
+.main-content tbody td a {
+    color: var(--bleu-clair);
+    font-weight: 600;
+    text-decoration: none;
+}
+.main-content tbody td a:hover { text-decoration: underline; }
+
+.footer { background: var(--bleu); color: rgba(255, 255, 255, 0.85); }
+
+@media (max-width: 768px) {
+    .nav_link { align-items: stretch; }
+    .navbar-menu a { justify-content: space-between; }
+    .main-content { padding: 16px; }
+    .main-content table { display: block; overflow-x: auto; }
+}

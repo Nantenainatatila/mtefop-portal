@@ -2,6 +2,7 @@ const fs = require("fs/promises");
 const path = require("path");
 const crypto = require("crypto");
 const docker = require("../config/docker");
+const { envoyerMessage } = require("./envoyerMessageService");
 
 // ============================================================
 // CONSTANTES
@@ -306,19 +307,24 @@ const genererDockerfileBackend = async (backendPath, technologie) => {
     return path.join(backendPath, "Dockerfile");
 };
 
-const genererDockerfiles = async (projectRoot, detection, { idApp }) => {
+const genererDockerfiles = async (io, projectRoot, detection, { idApp }) => {
+     envoyerMessage(io, `Generation du Dockerfile...`, 21);
+
     const noms = nomsApplication(idApp);
     const resultat = { frontend: null, backend: null };
 
     // Le backend est généré en premier : nginx a besoin de son nom et de son port
     if (detection.backend) {
+        envoyerMessage(io, `Generation du dockerfile backend...`, 22);
         resultat.backend = await genererDockerfileBackend(
             detection.backend.chemin,
             detection.backend.technologie
         );
+        envoyerMessage(io, `Dockerfile backend construite`, 23);
     }
 
     if (detection.frontend) {
+         envoyerMessage(io, `Generation du dockerfile frontend...`, 24);
         const backendInfo = detection.backend
             ? {
                   hote: noms.conteneurBackend,
@@ -331,6 +337,7 @@ const genererDockerfiles = async (projectRoot, detection, { idApp }) => {
             detection.frontend.technologie,
             genererNginxConfig(backendInfo)
         );
+         envoyerMessage(io, `Dockerfile frontend construite`, 25);
     }
 
     console.log("Dockerfiles générés");
@@ -389,21 +396,26 @@ const construireImage = async (dossier, nomImage) => {
     }
 };
 
-const construireImages = async (projectRoot, detection, idApp) => {
+const construireImages = async (io, projectRoot, detection, idApp) => {
+     envoyerMessage(io, `Construction des images...`, 26);
     const noms = nomsApplication(idApp);
     const resultat = { frontend: null, backend: null };
 
     if (detection.frontend) {
+        envoyerMessage(io, `Construction d'image frontend...`, 27);
         resultat.frontend = await construireImage(
             detection.frontend.chemin,
             noms.imageFrontend
         );
+        envoyerMessage(io, `Image frontend construite: ${resultat.frontend.nom_image}`, 28);
     }
     if (detection.backend) {
+        envoyerMessage(io, `Construction d'image backend...`, 29);
         resultat.backend = await construireImage(
             detection.backend.chemin,
             noms.imageBackend
         );
+        envoyerMessage(io, `Image backend construite: ${resultat.backend.nom_image}`, 30);
     }
     return resultat;
 };
@@ -412,17 +424,23 @@ const construireImages = async (projectRoot, detection, idApp) => {
 // RÉSEAU
 // ============================================================
 
-const assurerReseau = async (nomReseau, idApp) => {
+const assurerReseau = async (io, nomReseau, idApp) => {
+    envoyerMessage(io, `Creation ou utilisation de réseaux docker...`, 31);
+
     const reseaux = await docker.listNetworks({ filters: { name: [nomReseau] } });
     const existant = reseaux.find((r) => r.Name === nomReseau);
-    if (existant) return docker.getNetwork(existant.Id);
-
+    if (existant) {
+        envoyerMessage(io, `Réseaux déjà existe: ${nomReseau}`, 32);
+        return docker.getNetwork(existant.Id);
+    }
     await docker.createNetwork({
         Name: nomReseau,
         Driver: "bridge",
         Labels: { "mtefop.app": String(idApp) }
     });
-    return docker.getNetwork(nomReseau);
+    envoyerMessage(io, `Réseau creé: ${nomReseau}`, 33);
+    return docker.getNetwork(nomReseau); 
+    
 };
 
 /**
@@ -764,6 +782,7 @@ const verifierConnexionBackendBase = async (nomBackend, technologie, baseDeDonne
  * Retourne l'URL à ouvrir dans le navigateur.
  */
 const deployerApplication = async ({
+    io,
     idApp,
     projectRoot,
     detection,
@@ -771,6 +790,8 @@ const deployerApplication = async ({
     hotePublic = process.env.PUBLIC_HOST || "localhost"
 }) => {
     const noms = nomsApplication(idApp);
+
+     envoyerMessage(io, `Debut de construction...`, 20);
 
     console.log("==========================");
     console.log(
@@ -781,17 +802,20 @@ const deployerApplication = async ({
     );
 
     // 1. Dockerfiles + images
-    await genererDockerfiles(projectRoot, detection, { idApp });
-    await construireImages(projectRoot, detection, idApp);
+    await genererDockerfiles(io, projectRoot, detection, { idApp });
+    await construireImages(io, projectRoot, detection, idApp);
 
     // 2. Réseau dédié à l'application
-    await assurerReseau(noms.reseau, idApp);
+    await assurerReseau(io, noms.reseau, idApp);
 
     // 3. La base de données rejoint le réseau (alias "db" en plus de son nom)
     if (baseDeDonnees) {
+        envoyerMessage(io, `Connexion au reseaux...`, 34);
+
         await verifierBaseDeDonnees(baseDeDonnees);
         await connecterAuReseau(noms.reseau, baseDeDonnees.conteneur, "db");
         console.log(`Base ${baseDeDonnees.conteneur} connectée au réseau ${noms.reseau}`);
+         envoyerMessage(io, `Base ${baseDeDonnees.conteneur} connectée au réseau ${noms.reseau}` , 35);
     }
 
     let backend = null;
@@ -815,6 +839,7 @@ const deployerApplication = async ({
 
         // Preuve que le backend atteint réellement la base
         if (baseDeDonnees) {
+            envoyerMessage(io, `Verification de connexion...`, 35);
             await verifierConnexionBackendBase(
                 noms.conteneurBackend,
                 detection.backend.technologie,
@@ -827,6 +852,7 @@ const deployerApplication = async ({
 
     // 5. Frontend (publié sur un port libre de l'hôte)
     if (detection.frontend) {
+        envoyerMessage(io, `Demarrage de container...`, 34);
         frontend = await creerEtDemarrerConteneur({
             nom: noms.conteneurFrontend,
             image: noms.imageFrontend,

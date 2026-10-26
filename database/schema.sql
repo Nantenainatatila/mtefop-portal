@@ -35,7 +35,6 @@ VALUES (
     'active',
     TRUE
 );
-
 CREATE TABLE categories (
     id_cat SERIAL PRIMARY KEY,
     nom_cat VARCHAR(100) NOT NULL UNIQUE,
@@ -52,9 +51,13 @@ VALUES
     ('Ressources humaines', 'Applications liées aux ressources humaines', 2),
     ('Services', 'Applications et services destinés aux utilisateurs', 3);
 
+CREATE TABLE destinations(id_des SERIAL PRIMARY KEY,nom_des VARCHAR(50) NOT NULL UNIQUE);
+INSERT INTO destinations(nom_des) VALUES('personnel'),('public');
+
 CREATE TABLE applications (
     id_app SERIAL PRIMARY KEY,
     id_cat INTEGER NOT NULL,
+    id_des INTEGER,
     nom_app VARCHAR(150) NOT NULL,
     nom_bouton_app VARCHAR(100) NOT NULL,
     description_app TEXT,
@@ -77,7 +80,8 @@ CREATE TABLE applications (
         REFERENCES categories(id_cat) ON UPDATE CASCADE ON DELETE RESTRICT,
     CONSTRAINT chk_app_type CHECK (type_app IN ('docker', 'url')),
     CONSTRAINT chk_app_statut CHECK (statut_app IN ('online', 'offline', 'error')),
-    CONSTRAINT chk_app_port CHECK (port_app IS NULL OR port_app BETWEEN 1 AND 65535)
+    CONSTRAINT chk_app_port CHECK (port_app IS NULL OR port_app BETWEEN 1 AND 65535),
+    CONSTRAINT fk_application_destination FOREIGN KEY (id_des) REFERENCES destinations(id_des);
 );
 
 

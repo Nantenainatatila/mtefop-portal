@@ -13,12 +13,14 @@ function AjouterApplication () {
 
 
     const [categories, setCategories] = useState([]);
+    const [destinations, setdestinations] = useState([]);
     const [iconeApp, setIconeApp] = useState(null);
     const [fichierApp, setFichierApp] = useState(null);
     
 
     const [formData, setFormData] = useState({
         id_cat: "",
+        id_des: "",
         nom_app: "",
         nom_bouton_app: "",
         description_app: "",
@@ -42,11 +44,22 @@ function AjouterApplication () {
             setErreur("Une erreur est survenue dans le serveur");
         }
     };
+    const chargerDestination = async() => {
+        try {
+            const result = await api.get("/administrations/destinations");
+            setdestinations(result.data);
+            
+        } catch (error) {
+            console.log("erreur de recuperation de destination dans react", error);
+            setErreur("Une erreur est survenue dans le serveur");
+        }
+    };
 
     useEffect(() => {
         if(!id) {
             setFormData({
                 id_cat: "",
+                id_des: "",
                 nom_app: "",
                 nom_bouton_app: "",
                 description_app: "",
@@ -55,9 +68,11 @@ function AjouterApplication () {
                 moteur_db: ""
             });
             setCategories([]);
+            setdestinations([]);
             setIconeApp(null);
             setFichierApp(null);
             chargerCat();
+            chargerDestination();
         } else {
             
             api.get(`applications/${id}`)
@@ -65,6 +80,7 @@ function AjouterApplication () {
                 const donnee = response.data;
                 setFormData({
                     id_cat: donnee.donnee.id_cat,
+                    id_des: donnee.donnee.id_des ,
                     nom_app: donnee.donnee.nom_app,
                     nom_bouton_app: donnee.donnee.nom_bouton_app,
                     description_app: donnee.donnee.description_app,
@@ -164,6 +180,11 @@ function AjouterApplication () {
                     setLoading(false);
                     return;
                 }
+                if (!formData.id_des) {
+                    setErreur("Veuiller selectionner la destination");
+                    setLoading(false);
+                    return;
+                }
 
                 if (!formData.type_app) {
                     setErreur("Veuiller selectionner le type d'application");
@@ -188,6 +209,7 @@ function AjouterApplication () {
                 const data = new FormData();
 
                 data.append("id_cat", formData.id_cat);
+                data.append("id_des", formData.id_des);
                 data.append("nom_app", formData.nom_app);
                 data.append("nom_bouton_app", formData.nom_bouton_app);
                 data.append("description_app", formData.description_app);
@@ -217,6 +239,7 @@ function AjouterApplication () {
                 setErreur("");
                 setFormData({
                     id_cat: "",
+                    id_des: "",
                     nom_app: "",
                     nom_bouton_app: "",
                     description_app: "",
@@ -237,6 +260,7 @@ function AjouterApplication () {
     };
     useEffect(() => {
         chargerCat(); 
+        chargerDestination();
     }, []);
 
     return (
@@ -325,6 +349,18 @@ function AjouterApplication () {
                                         <option value="">-- Choisir la cathegorie  -- </option>
                                         {categories.map((cat) => (
                                         <option key={cat.id_cat} value={cat.id_cat} >{cat.nom_cat}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="input-group-ajout">
+                                    <div className="label">
+                                        <label htmlFor="">Destination: </label>
+                                    </div>
+                                    
+                                    <select name="id_des" value={formData.id_des} onChange={handleChange}>
+                                        <option value="">-- Choisir la destination  -- </option>
+                                        {destinations.map((des) => (
+                                        <option key={des.id_des} value={des.id_des} >{des.nom_des}</option>
                                         ))}
                                     </select>
                                 </div>

@@ -124,11 +124,24 @@ const getCategorie = async (req , res) => {
         });
     }
 };
+const getDestination = async (req, res) => {
+    try {
+        const response = await pool.query("SELECT * FROM destinations ORDER BY id_des");
+        return res.json(response.rows);
+
+    } catch (err) {
+        console.error("erreur de recuperation de la destination", err);
+        res.status(500).json({
+            message: "Erreur de recuperation de destination"
+        });
+    }
+};
 
 module.exports = { 
     getAdmin, 
     accepterAdmin, 
     refuserAdmin,
     deleteADmin,
-    getCategorie
+    getCategorie,
+    getDestination
 };

@@ -1,0 +1,66 @@
+.application-erreur {
+    width: 100%;
+    margin: 0px auto;
+    padding: 10px;
+    overflow: auto;
+}
+
+.header-erreur {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #0f3d75;
+    padding: 15px ;
+    color: white;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    width: 100%;
+}
+.header-erreur h2 {
+    margin: 0;
+    font-size: 20px;
+}
+.info_app_erreur {
+    display: flex;
+    flex-direction: column;
+    margin: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background: #cddbf0;
+    border-radius: 10px;
+    border: none;
+    width: 50%;
+}
+.info_app_message_erreur {
+    display: flex;
+    flex-direction: column;
+    margin: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    background: #cddbf0;
+    border-radius: 10px;
+    border: none;
+    width: 100%;
+}
+.info_app_erreur span, .info_app_message_erreur span {
+    font-size: 13px;
+    color: #666;
+    margin: 5px;
+}
+.info_app_erreur strong, .info_app_message_erreur strong {
+    margin: 10px;
+}
+.error {
+    color: red;
+    font-size: 14px;
+}
+@media (max-width: 850px) {
+    .info_app_erreur, .info_app_message_erreur {
+        display: inline;
+        width: 90%;
+        margin: auto;
+        margin-bottom: 10px;
+        padding: 10px 50px;
+    }
+} 
+

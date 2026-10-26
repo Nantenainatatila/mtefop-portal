@@ -98,19 +98,26 @@ function GestionAdministration() {
                                 <tr key={admin.id_admin}>
                                     <td>{admin.nom_admin}</td>
                                     <td>{admin.email_admin}</td>
-                                    <td className={admin.statut_admin === "rejected"? 
-                                    "rejeter" : 
-                                    admin.statut_admin === "active"? "accepter" : "enattente"}>
-                                        {admin.statut_admin === "pending"
-                                        ?"En attente"
-                                        : admin.statut_admin === "rejected"
-                                            ?"Refusé"
-                                            :"Accepté"
+                                    <td className={
+                                        admin.statut_admin === "rejected"
+                                        ?"rejeter" 
+                                        :admin.statut_admin === "active"
+                                            ?"accepter" 
+                                            : "enattente"
                                         }
+                                    >
+                                        <li>
+                                                {admin.statut_admin === "pending"
+                                            ?"En attente"
+                                            : admin.statut_admin === "rejected"
+                                                ?"Refusé"
+                                                :"Accepté"
+                                            }
+                                            </li>
                                     </td>
                                     <td>{formatDate(admin.date_creation)}</td>
                                     <td className={admin.statut_admin === "pending"? "non-vu" : "pending"}>
-                                        <div >
+                                        
                                             <div className="actions-buttons">
                                                     <button 
                                                         type="button" 
@@ -120,7 +127,7 @@ function GestionAdministration() {
                                                         className="action-button-accepter"
                                                         disabled={admin.statut_admin !== "pending"}
                                                     >
-                                                        <Check />
+                                                        <Check size={15}/>
                                                         <span>Accepter</span>
                                                     </button>
                                                     <button 
@@ -129,17 +136,17 @@ function GestionAdministration() {
                                                         refuser(admin.id_admin)}
                                                         disabled={admin.statut_admin !== "pending"}
                                                     >
-                                                            <X  />
+                                                            <X  size={15}/>
                                                             <span>Refuser</span>
                                                     </button>
 
                                                 <button className="action-button-supprimer" type="button" onClick={() => 
                                                     deleteAdmin(admin.id_admin)}
                                                 >
-                                                    <Trash2 />Supprimer
+                                                    <Trash2 size={15} />Supprimer
                                                 </button>
                                             </div>
-                                        </div>
+                                        
                                     </td>
                                 </tr>
                             ))

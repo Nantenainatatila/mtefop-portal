@@ -1,25 +1,21 @@
-table,td, tr, thead, tbody, th {
-    border: solid 1px;
-}
+
 table {
     border-collapse: collapse;
     width: 100%;
     
 }
 .actions-buttons {
-    display: flex;
+    display: flex; 
 }
 .action-button-accepter {
     display: flex;
-
     align-items: center;
     justify-content: center;
-
-    gap: 10px;
+    gap: 1px;
 
     width: 70%;
 
-    height: 40px;
+    height: 35px;
 
     margin: 1px;
 
@@ -42,17 +38,19 @@ table {
         transform 0.1s ease;
 }
 
+
+
 .action-button-supprimer, .action-button-refuser {
     display: flex;
 
     align-items: center;
     justify-content: center;
 
-    gap: 10px;
+    gap: 1px;
 
     width: 70%;
 
-    height: 40px;
+    height: 35px;
 
     margin: 1px;
 
@@ -75,7 +73,9 @@ table {
         transform 0.1s ease;
 }
 
-
+.icon {
+    font-size: 1px;
+}
 .action-button-accepter:hover, .logout:hover {
     background-color: #1d5da8;
 }
@@ -94,14 +94,25 @@ table {
     opacity: 0.7;
 }
 .accepter {
-    color: #1d5da8;
+    color: #086b2f;
 }
 .rejeter {
-    color: #a82222;
-}
-.enattente {
     color: red;
 }
+.enattente {
+    color: rgb(86, 67, 11)
+}
+#liste li {
+    font-size: 13px;
+}
+
+@media (max-width= 780px) {
+    .actions-buttons {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
 
 
 

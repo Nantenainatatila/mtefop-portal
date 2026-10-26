@@ -45,8 +45,15 @@ const CONFIGURATIONS = {
     }
 };
 
+// Par défaut, chaque déploiement repart d'une base neuve : l'ancien conteneur
+// ET son volume (donc toutes les données) sont supprimés. MySQL/MariaDB ne lisent
+// les mots de passe qu'à la première initialisation d'un volume : un ancien volume
+// réutilisé avec un nouveau conteneur provoque l'erreur 1045 "Access denied".
+// Pour conserver les données, définir REINITIALISER_BASE=false dans l'environnement du portail.
+const REINITIALISER_BASE = process.env.REINITIALISER_BASE !== "false";
+
 // ============================================================
-// ATTENDRE
+// UTILITAIRES
 // ============================================================
 
 const attendre = (ms) => {
@@ -55,17 +62,9 @@ const attendre = (ms) => {
     });
 };
 
-// ============================================================
-// GÉNÉRER UN MOT DE PASSE
-// ============================================================
-
 const genererMotDePasse = () => {
     return crypto.randomBytes(24).toString("hex");
 };
-
-// ============================================================
-// RÉCUPÉRER UNE VARIABLE D'ENVIRONNEMENT
-// ============================================================
 
 const obtenirVariable = (variables, nom) => {
     const prefixe = `${nom}=`;
@@ -165,6 +164,44 @@ const obtenirOuCreerVolume = async (nomVolume) => {
 
         throw error;
     }
+};
+
+// ============================================================
+// SUPPRIMER L'ANCIENNE BASE (conteneur + volume)
+// ============================================================
+
+// Exécute une suppression. Retourne true si supprimé, false si elle
+// n'existait déjà plus (404). Toute autre erreur est relancée.
+const supprimerSiExiste = async (action) => {
+    try {
+        await action();
+        return true;
+    } catch (error) {
+        if (error.statusCode === 404) {
+            return false;
+        }
+        throw error;
+    }
+};
+
+const supprimerAncienneBase = async (nomContainer, nomVolume) => {
+    const conteneurSupprime = await supprimerSiExiste(() =>
+        docker.getContainer(nomContainer).remove({ force: true, v: true })
+    );
+    console.log(
+        conteneurSupprime
+            ? `Ancien conteneur supprimé : ${nomContainer}`
+            : `Aucun ancien conteneur à supprimer : ${nomContainer}`
+    );
+
+    const volumeSupprime = await supprimerSiExiste(() =>
+        docker.getVolume(nomVolume).remove({ force: true })
+    );
+    console.log(
+        volumeSupprime
+            ? `Ancien volume supprimé : ${nomVolume}`
+            : `Aucun ancien volume à supprimer : ${nomVolume}`
+    );
 };
 
 // ============================================================
@@ -532,6 +569,48 @@ const attendreServeurSQL = async (
 };
 
 // ============================================================
+// LA BASE CONTIENT-ELLE DÉJÀ DES TABLES ?
+// (sert quand REINITIALISER_BASE=false : on ne rejoue pas le SQL)
+// ============================================================
+
+const baseContientDesTables = async (
+    container,
+    utilisateur,
+    motDePasse,
+    nomBase,
+    config
+) => {
+    const resultat = await executerCommande(
+        container,
+        [
+            config.client,
+            "--protocol=TCP",
+            "-h",
+            "127.0.0.1",
+            "-P",
+            String(config.port),
+            "--user",
+            utilisateur,
+            "--database",
+            nomBase,
+            "--batch",
+            "--skip-column-names",
+            "-e",
+            "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE()"
+        ],
+        [
+            `MYSQL_PWD=${motDePasse}`
+        ]
+    );
+
+    const nombre = Number(resultat.sortie.trim());
+
+    console.log(`Tables présentes dans ${nomBase} : ${nombre}`);
+
+    return nombre > 0;
+};
+
+// ============================================================
 // EXÉCUTER UN FICHIER SQL DANS MYSQL OU MARIADB
 // ============================================================
 
@@ -642,7 +721,7 @@ const executerFichierSQL = async (
         return true;
     } catch (error) {
         throw new Error(
-            `Erreur pendant l'importation du fichier SQL : ${error.message}`
+            `Erreur pendant l'importation du fichier SQL, veuiller verifier votre fichier sql: ${error.message}`
         );
     } finally {
         await fs.rm(
@@ -875,6 +954,16 @@ const creerBaseSQL = async (
     await obtenirImage(config.image);
 
     // --------------------------------------------------------
+    // Supprimer l'ancienne base (conteneur + volume)
+    // --------------------------------------------------------
+
+    if (REINITIALISER_BASE) {
+        console.log("Réinitialisation : suppression de l'ancienne base...");
+
+        await supprimerAncienneBase(nomContainer, nomVolume);
+    }
+
+    // --------------------------------------------------------
     // Créer ou récupérer le conteneur
     // --------------------------------------------------------
 
@@ -932,17 +1021,32 @@ const creerBaseSQL = async (
     );
 
     // --------------------------------------------------------
-    // Importer le fichier SQL
+    // Importer le fichier SQL (seulement si la base est vide)
     // --------------------------------------------------------
 
-    await executerFichierSQL(
-        container,
-        utilisateur,
-        motDePasse,
-        nomBase,
-        detectionDatabase.chemin,
-        config
-    );
+    if (
+        await baseContientDesTables(
+            container,
+            utilisateur,
+            motDePasse,
+            nomBase,
+            config
+        )
+    ) {
+        console.log(
+            "Base déjà initialisée (tables présentes) : import SQL ignoré. " +
+            "Pour réimporter, supprimez le conteneur et le volume de cette base."
+        );
+    } else {
+        await executerFichierSQL(
+            container,
+            utilisateur,
+            motDePasse,
+            nomBase,
+            detectionDatabase.chemin,
+            config
+        );
+    }
 
     // --------------------------------------------------------
     // Enregistrer les informations dans PostgreSQL
@@ -1020,12 +1124,14 @@ module.exports = {
     genererMotDePasse,
     obtenirOuCreerNetwork,
     obtenirOuCreerVolume,
+    supprimerAncienneBase,
     imageExiste,
     obtenirImage,
     executerCommande,
     verifierConnexionNetwork,
     connecterAuNetwork,
     attendreServeurSQL,
+    baseContientDesTables,
     executerFichierSQL,
     obtenirOuCreerConteneurSQL,
     creerBaseSQL

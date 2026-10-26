@@ -4,7 +4,8 @@ const {
     accepterAdmin, 
     refuserAdmin,
     deleteADmin,
-    getCategorie
+    getCategorie,
+    getDestination
 } = require("../controllers/adminControllers");
 
 const authMiddleware = require("../middleware/authMiddleware") ;
@@ -17,5 +18,6 @@ router.put("/:id/accepter", authMiddleware, superAdminMiddleware, accepterAdmin)
 router.put("/:id/refuser", authMiddleware, superAdminMiddleware, refuserAdmin);
 router.delete("/:id", authMiddleware, superAdminMiddleware, deleteADmin);
 router.get("/categories", getCategorie);
+router.get("/destinations", getDestination);
 
 module.exports = router;

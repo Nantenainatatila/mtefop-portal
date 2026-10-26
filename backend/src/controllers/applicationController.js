@@ -13,6 +13,7 @@ const getApplication = async (req , res) => {
                 d.moteur_db,
                 a.id_app,
                 a.id_cat,
+                a.id_des,
                 a.nom_app,
                 a.nom_bouton_app,
                 a.type_app,
@@ -21,15 +22,20 @@ const getApplication = async (req , res) => {
                 a.source_app,
                 a.description_app,
                 a.icone_app,
+                a.message_statut_app,
                 c.id_cat,
-                c.nom_cat
+                c.nom_cat,
+                des.id_des,
+                des.nom_des
 
             FROM application_database d
             INNER JOIN applications a
                 ON a.id_app = d.id_app
             INNER JOIN categories c
                 ON c.id_cat = a.id_cat
-            `
+            INNER JOIN destinations des
+                ON des.id_des = a.id_des
+            ORDER BY a.id_app`
         );
         return res.json(result.rows);
     } catch (error) {
@@ -44,6 +50,7 @@ const ajouterApplication = async (req , res) => {
     try {
         const {
             id_cat,
+            id_des,
             nom_app,
             nom_bouton_app,
             description_app,
@@ -54,7 +61,7 @@ const ajouterApplication = async (req , res) => {
 
         
         if (
-            !id_cat || !nom_app || !nom_bouton_app || !description_app || !type_app || !moteur_db
+            !id_cat || !id_des || !nom_app || !nom_bouton_app || !description_app || !type_app || !moteur_db
         ) {
             return res.status(400).json({
                 message: "Tous les champs sont obligatoires"
@@ -104,15 +111,17 @@ const ajouterApplication = async (req , res) => {
             `INSERT 
                 INTO applications (
                     id_cat,
+                    id_des,
                     nom_app,
                     nom_bouton_app,
                     description_app,
                     icone_app,
                     type_app,
                     url_app,
-                    source_app
+                    source_app,
+                    message_statut_app
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+                VALUES ($1, $10, $2, $3, $4, $5, $6, $7, $8, $9)
                 RETURNING id_app`
                 ,
                 [
@@ -123,7 +132,9 @@ const ajouterApplication = async (req , res) => {
                     icone_app, 
                     type_app, 
                     url_app || null, 
-                    source_app
+                    source_app,
+                    "Pas encore deploié",
+                    id_des
                 ]
         );
 
@@ -170,6 +181,8 @@ const deleteApp = async(req, res) => {
         const app = application.rows[0];
         console.log("app à supprimer:", app);
         await pool.query("DELETE FROM applications WHERE id_app = $1", [id]);
+        await pool.query("DELETE FROM deploiements WHERE id_app = $1", [id]);
+        
         const workspace = path.join(
             process.cwd(),
             "workspaces",
@@ -276,6 +289,7 @@ const getAppId = async (req, res) => {
                 d.actif,
                 a.id_app,
                 a.id_cat,
+                a.id_des,
                 a.nom_app,
                 a.nom_bouton_app,
                 a.type_app,
@@ -291,8 +305,11 @@ const getAppId = async (req, res) => {
                 a.url_publique_app,
                 a.port_app,
                 a.date_dernier_deploiement,
+                a.message_statut_app,
                 c.id_cat,
-                c.nom_cat
+                c.nom_cat,
+                des.id_des,
+                des.nom_des
                 
 
             FROM application_database d
@@ -300,6 +317,8 @@ const getAppId = async (req, res) => {
                 ON a.id_app = d.id_app
             INNER JOIN categories c
                 ON c.id_cat = a.id_cat
+            INNER JOIN destinations des
+                ON des.id_des = a.id_des
             WHERE a.id_app = $1
             `, [id]
         );
@@ -326,6 +345,7 @@ const modifierApp = async (req, res) => {
         const {id} = req.params;
         const {
             id_cat,
+            id_des,
             nom_app,
             nom_bouton_app,
             description_app,
@@ -362,6 +382,7 @@ const modifierApp = async (req, res) => {
 
         if (
             !id_cat ||
+            !id_des ||
             !nom_app ||
             !nom_bouton_app ||
             !type_app ||
@@ -420,7 +441,8 @@ const modifierApp = async (req, res) => {
                     type_app = $6,
                     url_app = $7,
                     source_app = $8,
-                    date_modification = CURRENT_TIMESTAMP
+                    date_modification = CURRENT_TIMESTAMP,
+                    id_des = $10
 
                 WHERE id_app = $9
                 RETURNING *`,
@@ -433,7 +455,8 @@ const modifierApp = async (req, res) => {
                 type_app,
                 type_app === "url"? url_app || null : null,
                 source_app, 
-                id
+                id,
+                id_des
             ]
         );
         
@@ -490,6 +513,8 @@ const modifierApp = async (req, res) => {
         });
     }
 };
+
+
 
 
 module.exports = {

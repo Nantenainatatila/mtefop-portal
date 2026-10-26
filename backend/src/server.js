@@ -12,8 +12,8 @@ const registerRoute = require("./routes/registerRoutse");
 const adminRoute = require("./routes/adminRoute") ;
 const applicationRoute = require("./routes/applicationRoute");
 const deploiementRoute = require("./routes/deploiementRoute");
-
-
+const success_failedRoute = require("./routes/success_failedRoute");
+const personnelRoute = require("./routes/personnelRoute");
 
 const app = express();
 const server = http.createServer(app);
@@ -38,6 +38,8 @@ app.use("/api/register", registerRoute);
 app.use("/api/administrations", adminRoute);
 app.use("/api/applications", applicationRoute);
 app.use("/api/deploiements", deploiementRoute);
+app.use("/api/success_failed", success_failedRoute);
+app.use("/api/personnels", personnelRoute);
 
 
 //tester la connexion docker

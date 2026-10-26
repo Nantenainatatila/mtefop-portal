@@ -25,13 +25,15 @@ function PublicLayourt() {
                     </button>
 
                     <nav className={`navbar-menu ${menuOuvert ? "menu-ouvert" : ""}`}>
-                        <Link to="/" onClick={fermerMenu}>Dashboard</Link>
+                        <Link to="/" onClick={fermerMenu}>Accueil</Link>
                         
-                        <Link to="/information" onClick={fermerMenu}>Information</Link>
-                        
-                        <Link to="/service" onClick={fermerMenu}>Service</Link>
+                        <Link to="/applicationsPublic" onClick={fermerMenu}>Applications</Link>
                         
                         <Link to="/partenariat" onClick={fermerMenu}>Partenariat</Link>
+                        
+                        <Link to="/missions" onClick={fermerMenu}>Nos missions</Link>
+
+                        <Link to="/contact" onClick={fermerMenu}>Contact</Link>
                     </nav>
                     
             </header>

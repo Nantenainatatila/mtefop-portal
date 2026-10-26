@@ -1,14 +1,26 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import api from "../../api/axios";
 import { useNavigate } from "react-router-dom";
 import "./layourt.css";
 import { LogOut } from "lucide-react";
-import { Link, Outlet } from "react-router-dom";
+import { NavLink as Link, Outlet, useLocation } from "react-router-dom";
 function AdminLayourt() {
     const [menuOuvert, setMenuOuvert] = useState(false);
     const fermerMenu = () => {
         setMenuOuvert(false);
     };
     const navigate = useNavigate();
+    const location = useLocation();
+    const [nombreErreur, setNombreErreur] = useState(0);
+
+    // Nombre des applications en erreur (rechargé à chaque changement de page)
+    useEffect(() => {
+        api.get("/success_failed/failed")
+            .then((response) => {
+                setNombreErreur(Array.isArray(response.data) ? response.data.length : 0);
+            })
+            .catch(() => setNombreErreur(0));
+    }, [location.pathname]);
     const deconnexion = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("utilisateur");
@@ -44,16 +56,19 @@ function AdminLayourt() {
                 <nav className={`navbar-menu ${menuOuvert ? "menu-ouvert": ""}`}>
                     <div className="nav_link">
                         
-                        <Link to="/admin" onClick={fermerMenu}>Dashboard</Link>
+                        <Link to="/admin" end onClick={fermerMenu}>Dashboard</Link>
                         
-                        <Link to="/admin/application" onClick={fermerMenu}>Application </Link>
+                        <Link to="/admin/application" onClick={fermerMenu}>Toute les applications</Link>
 
-                        <Link to="/admin/deploiement" onClick={fermerMenu}>Deploiement</Link>
+                        <Link to="/admin/success" onClick={fermerMenu}>Deploiement en uccès</Link>
 
-                        <Link to="/admin/logs" onClick={fermerMenu}>Logs des applications</Link>
+                        <Link to="/admin/erreur" onClick={fermerMenu} className="lien-erreur">
+                            Deploiement en erreur
+                            {nombreErreur > 0 && (
+                                <span className="badge-erreur">{nombreErreur}</span>
+                            )}
+                        </Link>
                 
-                        <Link to="/admin/parametre" onClick={fermerMenu}>Parametre</Link>
-
                         {role === "super_admin" && (
                             <>
                                 <Link to="/admin/gestionAdministration" onClick={fermerMenu}>Gestion d'administration</Link>

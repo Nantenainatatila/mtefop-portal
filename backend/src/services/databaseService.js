@@ -5,19 +5,20 @@ const {
 const {
     creerMySQL
 } = require("./databaseServiceMysql");
-
 const {
     creerMariaDB
 } = require("./databaseServiceMariaDB");
-
+const { envoyerMessage } = require("./envoyerMessageService");
 // ============================================================
 // INITIALISER LA BASE DE DONNÉES D'UNE APPLICATION
 // ============================================================
 
 const initialiserBaseDeDonnees = async (
+    io,
     application,
     detectionDatabase
 ) => {
+    envoyerMessage(io, `Initialisation de base des données...`, 19);
     if (!application) {
         throw new Error(
             "Aucune application fournie."
@@ -29,25 +30,20 @@ const initialiserBaseDeDonnees = async (
     )
         .trim()
         .toLowerCase();
-
     console.log(
         "================================================"
     );
-
     console.log(
         "INITIALISATION DE LA BASE DE DONNÉES"
     );
-
     console.log(
         "Application :",
         application.id_app
     );
-
     console.log(
         "Moteur sélectionné :",
         moteur
     );
-
     console.log(
         "================================================"
     );
@@ -66,7 +62,6 @@ const initialiserBaseDeDonnees = async (
 
         return null;
     }
-
     // ========================================================
     // VÉRIFIER LE FICHIER SQL
     // ========================================================
